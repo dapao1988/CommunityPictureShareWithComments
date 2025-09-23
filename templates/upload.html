@@ -1,59 +1,65 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>上传图片 - 小区图片分享平台</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <title>上传图片/视频 - 小区媒体分享平台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(rgba(255,255,255,0.9), rgba(255,255,255,0.9)), url('/static/images/community-bg.jpg');
+            background-size: cover;
+            background-attachment: fixed;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+        .upload-container {
+            max-width: 600px;
+            margin: 50px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <div class="container">
-            <div class="header-content">
-                <div class="logo">小区图片分享</div>
-                <nav>
-                    <ul>
-                        <li><a href="/">首页</a></li>
-                        <li><a href="/upload">上传图片</a></li>
-                    </ul>
-                </nav>
+    <div class="upload-container">
+        <h2 class="text-center mb-4">上传图片或视频</h2>
+        
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-info">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <form method="POST" action="/upload" enctype="multipart/form-data">
+            <div class="mb-3">
+                <label for="title" class="form-label">标题</label>
+                <input type="text" class="form-control" id="title" name="title" required>
             </div>
+            
+            <div class="mb-3">
+                <label for="description" class="form-label">描述</label>
+                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            </div>
+            
+            <div class="mb-3">
+                <label for="file" class="form-label">选择文件</label>
+                <input type="file" class="form-control" id="file" name="file" accept="image/*,video/*" required>
+                <div class="form-text">支持图片 (PNG, JPG, GIF, WEBP) 和视频 (MP4, MOV, AVI, MKV, WMV, FLV) 文件</div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary w-100">上传</button>
+        </form>
+        
+        <div class="text-center mt-3">
+            <a href="/" class="btn btn-outline-secondary">返回首页</a>
         </div>
-    </header>
+    </div>
     
-    <main class="container">
-        <div class="form-container">
-            <h2>上传图片</h2>
-            
-            <div class="flash-messages">
-                {% with messages = get_flashed_messages() %}
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="flash-message flash-success">{{ message }}</div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
-            </div>
-            
-            <form method="POST" action="/upload" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label for="title">图片标题</label>
-                    <input type="text" id="title" name="title" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="description">图片描述</label>
-                    <textarea id="description" name="description" rows="3"></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="image">选择图片</label>
-                    <input type="file" id="image" name="image" accept="image/*" required>
-                </div>
-                
-                <button type="submit" class="form-submit">上传图片</button>
-            </form>
-        </div>
-    </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

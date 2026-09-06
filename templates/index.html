@@ -109,12 +109,21 @@
                     </li>
                 </ul>
                 <ul class="navbar-nav">
+                    {% if session.get('user_id') %}
+                    <li class="nav-item">
+                        <span class="nav-link text-primary">当前账号：{{ session.get('username') }}</span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/logout">退出登录</a>
+                    </li>
+                    {% else %}
                     <li class="nav-item">
                         <a class="nav-link" href="/login">登录</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/register">注册</a>
                     </li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
@@ -126,9 +135,15 @@
             <div class="col-12 text-center mb-4">
                 <h1 class="display-5">小区精彩瞬间</h1>
                 <p class="lead">分享生活中的美好时刻</p>
+                {% if session.get('user_id') %}
                 <a href="/upload" class="btn upload-btn">
                     <i class="fas fa-cloud-upload-alt me-2"></i>上传图片或视频
                 </a>
+                {% else %}
+                <a href="/login" class="btn upload-btn">
+                    <i class="fas fa-sign-in-alt me-2"></i>登录后上传图片或视频
+                </a>
+                {% endif %}
             </div>
         </div>
         
@@ -178,6 +193,7 @@
                 mediaList.forEach(media => {
                     const col = document.createElement('div');
                     col.className = 'col-lg-4 col-md-6 mb-4';
+                    const isLoggedIn = {{ 'true' if session.get('user_id') else 'false' }};
                     
                     const mediaHtml = media.media_type === 'video' ? 
                         `<video controls class="w-100">
@@ -206,12 +222,14 @@
                                         <!-- 评论将通过JavaScript动态加载 -->
                                     </div>
                                 </div>
+                                ${isLoggedIn ? `
                                 <form class="comment-form mt-2" onsubmit="addComment(event, ${media.id})">
                                     <div class="input-group">
                                         <input type="text" class="form-control" placeholder="添加评论..." required>
                                         <button class="btn btn-primary" type="submit">发送</button>
                                     </div>
                                 </form>
+                                ` : '<div class="text-muted mt-2">请先<a href="/login">登录</a>后发表评论</div>'}
                             </div>
                         </div>
                     `;
@@ -254,9 +272,11 @@
                         <div class="comment-time">${result.comment.created_at}</div>
                     `;
                     commentsList.appendChild(commentDiv);
-                    
+
                     // 清空输入框
                     input.value = '';
+                } else {
+                    alert(result.message || '添加评论失败');
                 }
             } catch (error) {
                 console.error('添加评论失败:', error);

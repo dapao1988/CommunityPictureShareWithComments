@@ -20,7 +20,7 @@
 
 import os
 import subprocess
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -41,6 +41,16 @@ app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
 # 允许的文件扩展名
 ALLOWED_IMAGE_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
 ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov', 'avi', 'mkv', 'wmv', 'flv'}
+
+# 预置小区列表：上线前请替换为你实际要服务的小区名称
+COMMUNITY_OPTIONS = [
+    '朝阳花园',
+    '幸福家园',
+    '阳光丽景',
+    '锦绣雅苑',
+    '绿城小区',
+    '清风里',
+]
 
 db = SQLAlchemy(app)
 
@@ -167,26 +177,30 @@ def register():
         password = request.form['password']
         email = request.form['email']
         community = request.form['community']
-        
+
         # 检查用户是否已存在
         if User.query.filter_by(username=username).first():
             flash('用户名已存在')
             return redirect(url_for('register'))
-        
+
         if User.query.filter_by(email=email).first():
             flash('邮箱已存在')
             return redirect(url_for('register'))
-        
+
+        if community not in COMMUNITY_OPTIONS:
+            flash('请选择列表中的小区')
+            return redirect(url_for('register'))
+
         # 创建新用户
         hashed_password = generate_password_hash(password)
         new_user = User(username=username, password=hashed_password, email=email, community=community)
         db.session.add(new_user)
         db.session.commit()
-        
+
         flash('注册成功，请登录')
         return redirect(url_for('login'))
-    
-    return render_template('register.html')
+
+    return render_template('register.html', community_options=COMMUNITY_OPTIONS)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -196,16 +210,27 @@ def login():
         user = User.query.filter_by(username=username).first()
         
         if user and check_password_hash(user.password, password):
-            # 这里应该设置session或使用Flask-Login
+            session['user_id'] = user.id
+            session['username'] = user.username
             flash('登录成功')
             return redirect(url_for('index'))
         else:
             flash('用户名或密码错误')
-    
+
     return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('已退出登录')
+    return redirect(url_for('index'))
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
+    if 'user_id' not in session:
+        flash('请先登录后再上传文件')
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
         # 检查文件是否在请求中
         if 'file' not in request.files:
@@ -253,7 +278,7 @@ def upload():
                 return redirect(url_for('upload'))
             
             # 保存到数据库
-            user_id = 1  # 临时值，实际应从session获取
+            user_id = session['user_id']
             
             new_media = Media(
                 filename=final_filename, 
@@ -275,11 +300,15 @@ def upload():
 
 @app.route('/comment', methods=['POST'])
 def add_comment():
+    if 'user_id' not in session:
+        return jsonify({
+            'success': False,
+            'message': '请先登录后再发表评论'
+        }), 401
+
     content = request.form['content']
     media_id = request.form['media_id']
-    
-    # 这里应该获取当前登录用户的ID
-    user_id = 1  # 临时值，实际应从session获取
+    user_id = session['user_id']
     
     new_comment = Comment(content=content, user_id=user_id, media_id=media_id)
     db.session.add(new_comment)
